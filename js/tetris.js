@@ -6,7 +6,9 @@ let speed = 0,
     currentTetromino = null, //Tetromino object (square, L, etc)
     currentPosition = null,
     moving = true,
-    nextTetromino = null;
+    nextTetromino = null,
+    pause=false,
+    gameOver = false;
  
 //Adding events
 window.addEventListener("keydown", handleInput); 
@@ -42,7 +44,12 @@ function loadGame() {
     drawPreviewTetromino(); //TODO: Create the preview for next tetromino and draw it
  
     setInterval(() => {
-        moveDown();
+        if (gameOver) {
+            return;
+        }
+        if (!pause) {
+            moveDown();
+        }
     }, 1000 / (speed * speed * 1.5));
 }
  
@@ -65,7 +72,7 @@ function moveDown() {
     }
 }
  
-function checkCollision(nextPosition) {
+function checkCollision(nextPosition, newShape) {
     //Checking if the tetromino is colliding with something (wall or another tetromino)
     var collision = false;
  
@@ -73,16 +80,31 @@ function checkCollision(nextPosition) {
         return collision;
     }
  
-    for (let i = 0; i < currentTetromino.shape.length; i++) {
-        const tile = currentTetromino.shape[i];
-        const positionX = tile.x + nextPosition.x;
-        const positionY = tile.y + nextPosition.y;
-        const tileDiv = document.querySelector(`[data-x="${positionX}"][data-y="${positionY}"]`);
- 
-        if (tileDiv != null && !tileDiv.classList.contains("currentTile") && tileDiv.classList.contains("tile")) {
-            collision = true;
+    if (newShape != null || newShape != undefined) {
+        for (let i = 0; i < newShape.length; i++) {
+            const tile = newShape[i];
+            const positionX = tile.x + nextPosition.x;
+            const positionY = tile.y + nextPosition.y;
+            const tileDiv = document.querySelector(`[data-x="${positionX}"][data-y="${positionY}"]`);
+    
+            if (tileDiv != null && !tileDiv.classList.contains("currentTile") && tileDiv.classList.contains("tile")) {
+                collision = true;
+            }
+        }
+    } else {
+        for (let i = 0; i < currentTetromino.shape.length; i++) {
+            const tile = currentTetromino.shape[i];
+            const positionX = tile.x + nextPosition.x;
+            const positionY = tile.y + nextPosition.y;
+            const tileDiv = document.querySelector(`[data-x="${positionX}"][data-y="${positionY}"]`);
+    
+            if (tileDiv != null && !tileDiv.classList.contains("currentTile") && tileDiv.classList.contains("tile")) {
+                collision = true;
+            }
         }
     }
+
+    
  
     return collision;
 }
@@ -98,7 +120,6 @@ function handleInput(e) {
         Key up: rotate the tetromino
     */
     //TODO: Add the configuration to change the default keys.
-    //TODO: Add the check if moving I hit something if yes do nothing.
     const nextPosition = { ...currentPosition };
     const previousPosition = { ...currentPosition };
  
@@ -184,14 +205,15 @@ function checkLine() {
             //Move all the above tiles down by one
             const posY = parseInt(row.childNodes[0].dataset.y);
             const upperRows = Array.from(document.getElementById("gameDiv").querySelectorAll(".row")).
-                                    filter((row) => parseInt(row.childNodes[0].dataset.y) > posY);
+                                    filter((row) => parseInt(row.childNodes[0].dataset.y) > posY).
+                                    sort((a, b) => parseInt(a.childNodes[0].dataset.y) - parseInt(b.childNodes[0].dataset.y));
  
             upperRows.forEach(upperRow => {
+                console.log(upperRow);
                 upperRow.querySelectorAll(".tile").forEach((tileMoving) => {
                     const currentPosy = parseInt(tileMoving.dataset.y);
                     tileMoving.classList.remove("tile");
                     tileMoving.classList.add("emptyTile");
- 
                     const lowerPosy = currentPosy - 1;
                     console.log("lower pos y: " + lowerPosy);
                     const tileDiv = document.querySelector(`[data-x="${tileMoving.dataset.x}"][data-y="${lowerPosy}"]`);
@@ -222,7 +244,7 @@ function randomTetromino() {
     //Create a random tetromino
     let temp;
     do {
-        temp = tetrominoList[Math.floor(Math.random() * tetrominoList.length) - 1]
+        temp = tetrominoList[Math.floor(Math.random() * tetrominoList.length)]
     } while (temp == undefined);
     return temp;
 }
@@ -259,7 +281,6 @@ function drawTetromino(previousPosition, previousShape) {
  
 function rotateTetromino() {
     //Rotate the tetromino by 90 degrees
-    //TODO: Check if it work correctly
     if (currentTetromino == null || currentTetromino.shape == null) {
         return;
     }
@@ -267,16 +288,48 @@ function rotateTetromino() {
     if (currentTetromino.name == 'square') {
         return;
     }
- 
+
+    let newTetrominoShape = [];
     const centerX = currentTetromino.shape[0].x;
     const centerY = currentTetromino.shape[0].y;
+    let lowestY = currentTetromino.shape[0].y;
+
     currentTetromino.shape.forEach((tile) => {
         const relX = tile.x - centerX;
         const relY = tile.y - centerY;
- 
-        tile.x = centerX + relY;
-        tile.y = centerY - relX;
-    })
+        
+        newTetrominoShape.push({ x: centerX + relY, y: centerY - relX });
+        if (lowestY > newTetrominoShape[newTetrominoShape.length - 1].y) {
+            lowestY = newTetrominoShape[newTetrominoShape.length - 1].y;
+        }
+    });
+
+    //Check if the new position will go under the ground if yes prevent rotation
+    if (currentPosition.y + lowestY < 1) {
+        return;
+    }
+
+    //TODO: Check left and right border
+    for (let i = 0; i < newTetrominoShape.length; i++) {
+        if (newTetrominoShape.x + currentPosition.x <= 0) {
+            return;
+        }
+        if (newTetrominoShape.x + currentPosition.x >= 9) {
+            return;
+        }
+    }
+
+
+    //TODO: Optimize this
+    if (!checkCollision(currentPosition, newTetrominoShape)) {
+        currentTetromino.shape.forEach((tile) => {
+            const relX = tile.x - centerX;
+            const relY = tile.y - centerY;
+    
+            tile.x = centerX + relY;
+            tile.y = centerY - relX;
+        })
+    }
 }
  
 function getShape(tetromino) {
@@ -313,7 +366,19 @@ function getShape(tetromino) {
             divsTetromino.push({ x: 2, y: 0 });
             divsTetromino.push({ x: 3, y: 0 });
             break;
- 
+        case "Z":
+            divsTetromino.push({ x: 0, y: 1 });
+            divsTetromino.push({ x: 1, y: 1 });
+            divsTetromino.push({ x: 1, y: 0 });
+            divsTetromino.push({ x: 2, y: 0 });
+            break;
+        case "U":
+            divsTetromino.push({ x: 0, y: 0 });
+            divsTetromino.push({ x: 0, y: 1 });
+            divsTetromino.push({ x: 1, y: 0 });
+            divsTetromino.push({ x: 2, y: 0 });
+            divsTetromino.push({ x: 2, y: 1 });
+            break;
         default:
             break;
     }
@@ -324,11 +389,25 @@ function getShape(tetromino) {
 function drawPreviewTetromino() {
     //TODO: Draw the tetromino on the preview div
 }
+
+//TODO: Create the game over and stop the game
+function stopGame() {
+    //TODO: Stop the game
+    gameOver = true;
+}
+
+//TODO: Create the pause function
+function Pause() {
+    this.pause = !this.pause;
+}
  
+//TODO: Add Z tetromino and U tetromino
 const tetrominoList = [
     { name: "square", shape: getShape("square") },
     { name: "L", shape: getShape("L") },
     { name: "T", shape: getShape("T") },
     { name: "S", shape: getShape("S") },
     { name: "I", shape: getShape("I") },
+    { name: "Z", shape: getShape("Z") },
+    { name: "U", shape: getShape("U") }
 ];
