@@ -30,6 +30,23 @@ function loadGame() {
         }
         gameDiv.appendChild(rowDiv);
     }
+
+    const divPreview = document.getElementById("previewNextItem");
+    for (let i = 0; i < 6; i++) {
+        const rowDivPreview = document.createElement("div");
+        rowDivPreview.classList.add("rowPreview");
+        rowDivPreview.dataset.y = i;
+        
+        for (let j= 0; j<6; i++) {
+            const tileDivPreview = document.createElement("div");
+            tileDivPreview.classList.add("emptyTilePreview");
+            tileDivPreview.dataset.x = j;
+            tileDivPreview.dataset.y = i;
+            rowDivPreview.appendChild(tileDivPreview);
+        }
+        divPreview.appendChild(rowDivPreview);
+    }
+
     //TODO: Create the div for the score + level + next tetromino
  
     //TODO: Create a countdown and start the game
@@ -41,6 +58,7 @@ function loadGame() {
     currentPosition = { x: 4, y: 19 };
  
     drawTetromino(currentPosition);
+    nextTetromino = randomTetromino();
     drawPreviewTetromino(); //TODO: Create the preview for next tetromino and draw it
  
     setInterval(() => {
@@ -388,6 +406,17 @@ function getShape(tetromino) {
 //TODO: Create the preview for next tetromino
 function drawPreviewTetromino() {
     //TODO: Draw the tetromino on the preview div
+    if (nextTetromino == null || nextTetromino == undefined) return;
+    const divPreview = document.getElementById("previewNextItem");
+    
+    const shape = nextTetromino.shape;
+
+    shape.forEach((tile) => {
+        const divTile = document.createElement("div");
+        divTile.classList.add("tile");
+        
+        divPreview.appendChild(divTile);
+    })
 }
 
 //TODO: Create the game over and stop the game
