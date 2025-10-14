@@ -45,9 +45,27 @@ body {
     border: 1px solid green;
     border-radius: 4px;
     /* TODO: Make the empty tile only on the corners */
-    
-
 }
+
+.emptyTilePreview {
+    width: 10px;
+    min-width: 10px;
+    max-width: 10px;
+    height: 10px;
+    min-height: 10px;
+    max-height: 10px;
+    border: 1px solid green;
+    border-radius: 4px;
+    /* TODO: Make the empty tile only on the corners */
+}
+
+.tilePreview {
+    width: 18px;
+    height: 18px;
+    border: 1px solid green;
+    border-radius: 4px;
+}
+
 
 .tile {
     width: 18px;
@@ -75,7 +93,7 @@ body {
 }
 
 #previewNextItem div {
-    margin: 0 10px;
+    margin: 0;
 }
 
 #previewNextItem span {

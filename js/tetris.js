@@ -32,12 +32,17 @@ function loadGame() {
     }
 
     const divPreview = document.getElementById("previewNextItem");
+    
+    if (divPreview == null) {
+        alert("Error while preparing the game.");
+        return;
+    }
     for (let i = 0; i < 6; i++) {
         const rowDivPreview = document.createElement("div");
         rowDivPreview.classList.add("rowPreview");
         rowDivPreview.dataset.y = i;
         
-        for (let j= 0; j<6; i++) {
+        for (let j= 0; j<6; j++) {
             const tileDivPreview = document.createElement("div");
             tileDivPreview.classList.add("emptyTilePreview");
             tileDivPreview.dataset.x = j;
@@ -129,6 +134,8 @@ function checkCollision(nextPosition, newShape) {
  
 function handleInput(e) {
     const keyCode = e.keyCode;
+    if (currentPosition == null) return;
+
     //Handle the keyboard input to move the tetromino
     //Default:
     /*
@@ -204,7 +211,9 @@ function hit() {
         }
  
         checkLine();
-        currentTetromino = randomTetromino();
+        currentTetromino = nextTetromino;
+        nextTetromino = randomTetromino();
+        drawPreviewTetromino();
         currentPosition = { x: 4, y: 19 };
         drawTetromino(currentPosition);
         moving = true;
@@ -407,15 +416,22 @@ function getShape(tetromino) {
 function drawPreviewTetromino() {
     //TODO: Draw the tetromino on the preview div
     if (nextTetromino == null || nextTetromino == undefined) return;
+
+    document.querySelectorAll("div.tilePreview").forEach((tile) => {
+        tile.classList.remove("tilePreview");
+        tile.classList.add("emptyTilePreview");
+    })
+
     const divPreview = document.getElementById("previewNextItem");
     
     const shape = nextTetromino.shape;
 
     shape.forEach((tile) => {
-        const divTile = document.createElement("div");
-        divTile.classList.add("tile");
-        
-        divPreview.appendChild(divTile);
+        const tileDiv = document.querySelector(`#previewNextItem [data-x="${tile.x}"][data-y="${tile.y}"]`);
+        if (tileDiv != null) {
+            tileDiv.classList.remove("emptyTilePreview");
+            tileDiv.classList.add("tilePreview");    
+        }
     })
 }
 
